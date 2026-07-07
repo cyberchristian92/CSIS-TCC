@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: csis_user
+      POSTGRES_PASSWORD: csis_password
+      POSTGRES_DB: csis_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # backend:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - db
+  #   environment:
+  #     DATABASE_URL: postgresql://csis_user:csis_password@db:5432/csis_db?schema=public
+  #   restart: unless-stopped
+
+  # nginx:
+  #   image: nginx:alpine
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./frontend/build/web:/usr/share/nginx/html
+  #   depends_on:
+  #     - backend
+  #   restart: unless-stopped
+
+volumes:
+  pgdata:
