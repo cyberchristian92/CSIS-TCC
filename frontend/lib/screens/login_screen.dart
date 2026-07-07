@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:frontend/theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -8,84 +10,127 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  bool _isLoading = false;
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _hasError = false;
 
-  void _login() async {
-    setState(() => _isLoading = true);
-    // Simula tempo de rede
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() => _isLoading = false);
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, '/dashboard');
+  void _login() {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      setState(() {
+        _hasError = true;
+      });
+      return;
     }
+    
+    // Simulação simples: qualquer preenchimento não vazio passa.
+    Navigator.pushReplacementNamed(context, '/dashboard');
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final size = MediaQuery.of(context).size;
+    final isDesktop = size.width > 800;
+
     return Scaffold(
-      body: Center(
-        child: Container(
-          width: 400,
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.security, size: 64, color: colorScheme.primary),
-              const SizedBox(height: 16),
-              Text(
-                'Plataforma CSIS',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.primary,
+      backgroundColor: AppTheme.background,
+      body: Row(
+        children: [
+          // Lado do formulário
+          Container(
+            width: isDesktop ? 480 : size.width,
+            color: AppTheme.surface,
+            padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 64),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Logo real em SVG
+                Row(
+                  children: [
+                    SvgPicture.asset(
+                      'assets/logo.svg',
+                      width: 48,
+                      height: 48,
+                      // Remova a cor caso a logo já tenha as cores corretas
+                      // colorFilter: const ColorFilter.mode(AppTheme.primary, BlendMode.srcIn),
                     ),
-              ),
-              const SizedBox(height: 32),
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: 'E-mail',
-                  prefixIcon: Icon(Icons.email),
-                  border: OutlineInputBorder(),
+                    const SizedBox(width: 12),
+                    Text(
+                      'CSIS',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: AppTheme.primary,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Senha',
-                  prefixIcon: Icon(Icons.lock),
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 48),
+                Text(
+                  'Entrar',
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: FilledButton(
-                  onPressed: _isLoading ? null : _login,
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('ENTRAR', style: TextStyle(fontSize: 16)),
+                const SizedBox(height: 8),
+                Text(
+                  'Acesse a plataforma de gestão técnica',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 32),
+                TextField(
+                  controller: _emailController,
+                  decoration: const InputDecoration(
+                    hintText: 'E-mail corporativo',
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _passwordController,
+                  decoration: const InputDecoration(
+                    hintText: 'Senha',
+                  ),
+                  obscureText: true,
+                ),
+                if (_hasError) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'E-mail ou senha incorretos.',
+                    style: TextStyle(color: AppTheme.statusRejected, fontSize: 13),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _login,
+                    child: const Text('Entrar'),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      // Simula esqueci a senha
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppTheme.primary,
+                    ),
+                    child: const Text('Esqueci minha senha'),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+          // Área restante no desktop com fundo liso cinza
+          if (isDesktop)
+            Expanded(
+              child: Container(
+                color: AppTheme.background,
+              ),
+            ),
+        ],
       ),
     );
   }

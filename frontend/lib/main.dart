@@ -1,40 +1,32 @@
 import 'package:flutter/material.dart';
-import 'screens/login_screen.dart';
-import 'screens/dashboard_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:frontend/screens/login_screen.dart';
+import 'package:frontend/screens/scaffold_screen.dart';
+import 'package:frontend/theme/app_theme.dart';
+import 'package:frontend/providers/app_state.dart';
 
 void main() {
-  runApp(const CSISApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => AppState(),
+      child: const CsisApp(),
+    ),
+  );
 }
 
-class CSISApp extends StatelessWidget {
-  const CSISApp({super.key});
+class CsisApp extends StatelessWidget {
+  const CsisApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Plataforma CSIS',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1E3A8A), // Azul escuro / Premium
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        fontFamily: 'Roboto', // Pode ser alterado para Inter ou Outfit no futuro
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1E3A8A),
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-        fontFamily: 'Roboto',
-      ),
-      themeMode: ThemeMode.system,
+      theme: AppTheme.lightTheme,
       initialRoute: '/login',
       routes: {
         '/login': (context) => const LoginScreen(),
-        '/dashboard': (context) => const DashboardScreen(),
+        '/dashboard': (context) => const ScaffoldScreen(),
       },
     );
   }
