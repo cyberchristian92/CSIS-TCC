@@ -1,78 +1,101 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Identidade visual da CSIS — ver Produçao/design/csis_brand_book.html
 class AppTheme {
-  // Cores Principais
-  static const Color background = Color(0xFFF6F7F9);
-  static const Color surface = Color(0xFFFFFFFF);
-  static const Color primary = Color(0xFF0F6B5C);
-  static const Color primaryHover = Color(0xFF0B564A);
-  
+  // Cores Principais (brand CSIS: navy + ciano, estética dark/cyber)
+  static const Color background = Color(0xFF050F1C); // navy-deep
+  static const Color surface = Color(0xFF091A2D); // navy
+  static const Color surfaceRaised = Color(0xFF112844); // navy-mid (cards elevados, hover)
+  static const Color primary = Color(0xFF49C3D1); // ciano
+  static const Color primaryHover = Color(0xFF66E0EE); // ciano-bright
+  static const Color primaryDim = Color(0xFF2A7E87); // ciano-dim (desabilitado)
+
   // Cores de Linha e Borda
-  static const Color border = Color(0xFFE1E4E9);
-  
+  static const Color border = Color(0x1FFFFFFF); // branco 12% — borda sutil sobre navy
+
   // Tipografia Cores
-  static const Color textMain = Color(0xFF1A1D23);
-  static const Color textSecondary = Color(0xFF5C6470);
-  static const Color textDisabled = Color(0xFF9AA1AC);
+  static const Color textMain = Color(0xFFF1F5F9); // cloud
+  static const Color textSecondary = Color(0xFF9CA3AF); // gray-light
+  static const Color textDisabled = Color(0xFF6B7280); // gray
 
-  // Cores Semânticas
-  static const Color statusPending = Color(0xFFB76E00);
-  static const Color statusApproved = Color(0xFF1E7D4F);
-  static const Color statusRejected = Color(0xFFB3261E);
-  static const Color statusInProgress = Color(0xFF3457A6);
-  static const Color statusArchived = Color(0xFF8A8F98);
+  // Cores Semânticas de status (Missão/Projeto)
+  static const Color statusPending = Color(0xFF64748B); // PENDENTE — neutro, ainda não iniciado
+  static const Color statusInProgress = Color(0xFF49C3D1); // EM_ANDAMENTO — ciano da marca
+  static const Color statusInReview = Color(0xFFF59E0B); // EM_REVISAO — âmbar
+  static const Color statusApproved = Color(0xFF16A34A); // APROVADA / Concluído — verde
+  static const Color statusRejected = Color(0xFFDC2626); // REJEITADA — vermelho
+  static const Color statusArchived = Color(0xFF94A3B8); // Arquivado — cinza-azulado
 
-  static ThemeData get lightTheme {
+  static const double radius = 10;
+
+  static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
+      brightness: Brightness.dark,
       scaffoldBackgroundColor: background,
-      colorScheme: const ColorScheme.light(
+      colorScheme: const ColorScheme.dark(
         primary: primary,
         surface: surface,
         onSurface: textMain,
-        background: background,
+        error: statusRejected,
       ),
-      textTheme: GoogleFonts.interTextTheme().copyWith(
-        bodyLarge: GoogleFonts.inter(color: textMain, fontSize: 16),
-        bodyMedium: GoogleFonts.inter(color: textMain, fontSize: 14),
-        bodySmall: GoogleFonts.inter(color: textSecondary, fontSize: 12),
-        titleLarge: GoogleFonts.inter(color: textMain, fontSize: 24, fontWeight: FontWeight.w600),
-        titleMedium: GoogleFonts.inter(color: textMain, fontSize: 20, fontWeight: FontWeight.w600),
-        titleSmall: GoogleFonts.inter(color: textMain, fontSize: 16, fontWeight: FontWeight.w600),
-        labelLarge: GoogleFonts.inter(color: textMain, fontSize: 14, fontWeight: FontWeight.w500),
+      textTheme: GoogleFonts.dmSansTextTheme(ThemeData.dark().textTheme).copyWith(
+        bodyLarge: GoogleFonts.dmSans(color: textMain, fontSize: 16),
+        bodyMedium: GoogleFonts.dmSans(color: textMain, fontSize: 14),
+        bodySmall: GoogleFonts.dmSans(color: textSecondary, fontSize: 12),
+        titleLarge: GoogleFonts.sora(color: textMain, fontSize: 24, fontWeight: FontWeight.w700, letterSpacing: -0.02),
+        titleMedium: GoogleFonts.sora(color: textMain, fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.02),
+        titleSmall: GoogleFonts.sora(color: textMain, fontSize: 16, fontWeight: FontWeight.w600),
+        labelLarge: GoogleFonts.dmSans(color: textMain, fontSize: 14, fontWeight: FontWeight.w500),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
-          foregroundColor: Colors.white,
+          foregroundColor: background,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(radius),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          textStyle: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500),
+          textStyle: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: textMain,
+          side: const BorderSide(color: border),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius)),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          textStyle: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w500),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: primary,
+          textStyle: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w500),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: surface,
-        hintStyle: GoogleFonts.inter(color: textDisabled),
+        fillColor: surfaceRaised,
+        hintStyle: GoogleFonts.dmSans(color: textDisabled),
+        labelStyle: GoogleFonts.dmSans(color: textSecondary),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(radius),
           borderSide: const BorderSide(color: border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(radius),
           borderSide: const BorderSide(color: border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(radius),
           borderSide: const BorderSide(color: primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(radius),
           borderSide: const BorderSide(color: statusRejected),
         ),
       ),
@@ -81,7 +104,7 @@ class AppTheme {
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(radius),
           side: const BorderSide(color: border),
         ),
       ),
@@ -90,12 +113,24 @@ class AppTheme {
         space: 1,
         thickness: 1,
       ),
+      iconTheme: const IconThemeData(color: textSecondary),
     );
   }
 
+  /// Compatibilidade com código existente que referenciava `lightTheme`.
+  static ThemeData get lightTheme => darkTheme;
+
   // Estilo utilitário para textos monoespaçados (Hashes, IDs)
-  static TextStyle get monoTextStyle => GoogleFonts.ibmPlexMono(
+  static TextStyle get monoTextStyle => GoogleFonts.jetBrainsMono(
         color: textMain,
         fontSize: 14,
+      );
+
+  /// Tag estilo brand book: mono, uppercase, letter-spacing largo — usado em badges de status.
+  static TextStyle tagStyle({Color color = primary, double fontSize = 11}) => GoogleFonts.jetBrainsMono(
+        color: color,
+        fontSize: fontSize,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1.2,
       );
 }
