@@ -10,7 +10,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ----------------------------------------------------------------------------
@@ -29,6 +28,7 @@ model User {
   entregas     Entrega[]
   revisoes     Revisao[]
   documentos   Documento[]
+  comentarios  ComentarioMissao[]
   permissoes   Permissao[]
   logs         LogAuditoria[]
 }
@@ -64,6 +64,7 @@ model Projeto {
   missoes      Missao[]
   documentos   Documento[]
   arquivos     Arquivo[]
+  pastas       Pasta[]
   permissoes   Permissao[]
   valores_campo ValorCampo[]
 }
@@ -78,11 +79,17 @@ model Missao {
   prazo           DateTime?
   criterio_aceite String?
   valor_bounty    Float?
+  tags            String[]    @default([])
 
   projeto         Projeto     @relation(fields: [projeto_id], references: [id], onDelete: Cascade)
   responsavel     User?       @relation(fields: [responsavel_id], references: [id], onDelete: SetNull)
   entregas        Entrega[]
   valores_campo   ValorCampo[]
+  arquivos        Arquivo[]
+  documentos      Documento[]
+  pastas          Pasta[]
+  comentarios     ComentarioMissao[]
+  itens_checklist ChecklistItem[]
 }
 
 // ----------------------------------------------------------------------------
@@ -92,6 +99,8 @@ model Missao {
 model Documento {
   id          String      @id @default(uuid())
   projeto_id  String
+  missao_id   String?
+  pasta_id    String?
   autor_id    String
   tipo        String      @default("MARKDOWN")
   conteudo    String      @db.Text
@@ -100,12 +109,16 @@ model Documento {
   atualizado_em DateTime  @updatedAt
 
   projeto     Projeto     @relation(fields: [projeto_id], references: [id], onDelete: Cascade)
+  missao      Missao?     @relation(fields: [missao_id], references: [id], onDelete: SetNull)
+  pasta       Pasta?      @relation(fields: [pasta_id], references: [id], onDelete: SetNull)
   autor       User        @relation(fields: [autor_id], references: [id])
 }
 
 model Arquivo {
   id          String      @id @default(uuid())
   projeto_id  String
+  missao_id   String?
+  pasta_id    String?
   nome        String
   caminho     String
   hash_sha256 String
@@ -115,8 +128,26 @@ model Arquivo {
   enviado_em  DateTime    @default(now())
 
   projeto     Projeto     @relation(fields: [projeto_id], references: [id], onDelete: Cascade)
+  missao      Missao?     @relation(fields: [missao_id], references: [id], onDelete: SetNull)
+  pasta       Pasta?      @relation(fields: [pasta_id], references: [id], onDelete: SetNull)
   entrega_id  String?
   entrega     Entrega?    @relation(fields: [entrega_id], references: [id], onDelete: SetNull)
+}
+
+model Pasta {
+  id            String      @id @default(uuid())
+  projeto_id    String
+  missao_id     String?
+  pasta_pai_id  String?
+  nome          String
+  criado_em     DateTime    @default(now())
+
+  projeto       Projeto     @relation(fields: [projeto_id], references: [id], onDelete: Cascade)
+  missao        Missao?     @relation(fields: [missao_id], references: [id], onDelete: SetNull)
+  pasta_pai     Pasta?      @relation("SubPastas", fields: [pasta_pai_id], references: [id], onDelete: Cascade)
+  subpastas     Pasta[]     @relation("SubPastas")
+  arquivos      Arquivo[]
+  documentos    Documento[]
 }
 
 model Entrega {
@@ -221,4 +252,30 @@ model ValorCampo {
   campo            CampoCustomizado @relation(fields: [campo_id], references: [id], onDelete: Cascade)
   projeto          Projeto?         @relation(fields: [projeto_id], references: [id], onDelete: Cascade)
   missao           Missao?          @relation(fields: [missao_id], references: [id], onDelete: Cascade)
+}
+
+// ----------------------------------------------------------------------------
+// Colaboração na Missão (comentários e checklist)
+// ----------------------------------------------------------------------------
+
+model ComentarioMissao {
+  id         String   @id @default(uuid())
+  missao_id  String
+  autor_id   String
+  texto      String   @db.Text
+  criado_em  DateTime @default(now())
+
+  missao     Missao   @relation(fields: [missao_id], references: [id], onDelete: Cascade)
+  autor      User     @relation(fields: [autor_id], references: [id])
+}
+
+model ChecklistItem {
+  id         String   @id @default(uuid())
+  missao_id  String
+  texto      String
+  concluido  Boolean  @default(false)
+  ordem      Int      @default(0)
+  criado_em  DateTime @default(now())
+
+  missao     Missao   @relation(fields: [missao_id], references: [id], onDelete: Cascade)
 }
