@@ -1,17 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/theme/app_theme.dart';
-import 'package:frontend/providers/app_state.dart';
+import 'package:frontend/models/auth_models.dart';
+import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/providers/workspace_provider.dart';
 
-class UsersListScreen extends StatelessWidget {
+const _papeis = ['ADMIN', 'LIDER', 'REVISOR', 'COLABORADOR'];
+
+class UsersListScreen extends StatefulWidget {
   const UsersListScreen({super.key});
 
-  void _showNewUserModal(BuildContext context, AppState appState) {
-    final nameController = TextEditingController();
-    final emailController = TextEditingController();
-    String? selectedRole;
+  @override
+  State<UsersListScreen> createState() => _UsersListScreenState();
+}
 
-    showDialog(
+class _UsersListScreenState extends State<UsersListScreen> {
+  bool _carregando = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _carregar();
+  }
+
+  Future<void> _carregar() async {
+    setState(() => _carregando = true);
+    await context.read<WorkspaceProvider>().carregarUsuarios();
+    if (!mounted) return;
+    setState(() => _carregando = false);
+  }
+
+  Future<void> _showNewUserModal(WorkspaceProvider provider, bool souAdmin) async {
+    final nomeController = TextEditingController();
+    final emailController = TextEditingController();
+    final senhaController = TextEditingController();
+    String papel = 'COLABORADOR';
+    bool enviando = false;
+    String? erro;
+
+    await showDialog(
       context: context,
       builder: (ctx) {
         return StatefulBuilder(builder: (context, setState) {
@@ -21,48 +48,52 @@ class UsersListScreen extends StatelessWidget {
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: 'Nome Completo'),
-                ),
+                TextField(controller: nomeController, decoration: const InputDecoration(labelText: 'Nome Completo')),
                 const SizedBox(height: 16),
-                TextField(
-                  controller: emailController,
-                  decoration: const InputDecoration(labelText: 'E-mail Institucional'),
-                ),
+                TextField(controller: emailController, decoration: const InputDecoration(labelText: 'E-mail Institucional'), keyboardType: TextInputType.emailAddress),
+                const SizedBox(height: 16),
+                TextField(controller: senhaController, decoration: const InputDecoration(labelText: 'Senha temporária (mín. 8 caracteres)'), obscureText: true),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   decoration: const InputDecoration(labelText: 'Papel Global'),
-                  value: selectedRole,
-                  items: const [
-                    DropdownMenuItem(value: 'Administrador', child: Text('Administrador')),
-                    DropdownMenuItem(value: 'Revisor Sênior', child: Text('Revisor Sênior')),
-                    DropdownMenuItem(value: 'Analista Pleno', child: Text('Analista Pleno')),
-                    DropdownMenuItem(value: 'Convidado Externo', child: Text('Convidado Externo')),
-                  ],
-                  onChanged: (val) => setState(() => selectedRole = val),
+                  initialValue: papel,
+                  items: _papeis
+                      .where((p) => p != 'ADMIN' || souAdmin) // só Admin pode criar outro Admin
+                      .map((p) => DropdownMenuItem(value: p, child: Text(p)))
+                      .toList(),
+                  onChanged: (val) => setState(() => papel = val ?? papel),
                 ),
+                if (erro != null) ...[
+                  const SizedBox(height: 12),
+                  Text(erro!, style: const TextStyle(color: AppTheme.statusRejected, fontSize: 13)),
+                ],
               ],
             ),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancelar', style: TextStyle(color: AppTheme.textSecondary)),
-              ),
+              TextButton(onPressed: enviando ? null : () => Navigator.pop(ctx), child: const Text('Cancelar', style: TextStyle(color: AppTheme.textSecondary))),
               ElevatedButton(
-                onPressed: () {
-                  if (nameController.text.isNotEmpty && emailController.text.isNotEmpty && selectedRole != null) {
-                    final newUser = UserResource(
-                      id: DateTime.now().millisecondsSinceEpoch.toString(),
-                      name: nameController.text,
-                      role: selectedRole!,
-                      email: emailController.text,
-                    );
-                    appState.addResource(newUser);
-                    Navigator.pop(ctx);
-                  }
-                },
-                child: const Text('Enviar Convite'),
+                onPressed: enviando
+                    ? null
+                    : () async {
+                        if (nomeController.text.trim().isEmpty || emailController.text.trim().isEmpty || senhaController.text.length < 8) {
+                          setState(() => erro = 'Preencha nome, e-mail e uma senha com pelo menos 8 caracteres.');
+                          return;
+                        }
+                        setState(() => enviando = true);
+                        try {
+                          await provider.criarUsuario(nomeController.text.trim(), emailController.text.trim(), senhaController.text, papel);
+                          if (context.mounted) Navigator.pop(ctx);
+                          await _carregar();
+                        } catch (e) {
+                          setState(() {
+                            enviando = false;
+                            erro = e.toString();
+                          });
+                        }
+                      },
+                child: enviando
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.background))
+                    : const Text('Enviar Convite'),
               ),
             ],
           );
@@ -71,10 +102,20 @@ class UsersListScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _alterarPapel(WorkspaceProvider provider, User usuario, String novoPapel) async {
+    try {
+      await provider.atualizarPapelUsuario(usuario.id, novoPapel);
+      await _carregar();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
-    final users = appState.resources;
+    final provider = context.watch<WorkspaceProvider>();
+    final auth = context.watch<AuthProvider>();
+    final usuarios = provider.usuarios;
 
     return Padding(
       padding: const EdgeInsets.all(32.0),
@@ -89,41 +130,35 @@ class UsersListScreen extends StatelessWidget {
                 children: [
                   Text('Usuários e Perfis', style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 8),
-                  Text(
-                    'Gestão de acesso e privilégios da plataforma.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary),
-                  ),
+                  Text('Gestão de acesso e privilégios da plataforma.', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary)),
                 ],
               ),
               ElevatedButton.icon(
-                onPressed: () => _showNewUserModal(context, appState),
+                onPressed: () => _showNewUserModal(provider, auth.isAdmin),
                 icon: const Icon(Icons.person_add, size: 18),
                 label: const Text('Convidar Usuário'),
               ),
             ],
           ),
           const SizedBox(height: 32),
-          
           Expanded(
             child: Container(
-              decoration: BoxDecoration(
-                color: AppTheme.surface,
-                border: Border.all(color: AppTheme.border),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: ListView(
-                children: [
-                  _buildTableHeader(),
-                  ...users.map((user) {
-                    return Column(
-                      children: [
-                        _buildTableRow(user),
-                        const Divider(height: 1),
-                      ],
-                    );
-                  }).toList(),
-                ],
-              ),
+              decoration: BoxDecoration(color: AppTheme.surface, border: Border.all(color: AppTheme.border), borderRadius: BorderRadius.circular(AppTheme.radius)),
+              child: _carregando
+                  ? const Center(child: CircularProgressIndicator(color: AppTheme.primary))
+                  : usuarios.isEmpty
+                      ? const Center(child: Text('Nenhum usuário ainda.', style: TextStyle(color: AppTheme.textSecondary)))
+                      : ListView(
+                          children: [
+                            _buildTableHeader(),
+                            ...usuarios.map((u) => Column(
+                                  children: [
+                                    _buildTableRow(provider, auth, u),
+                                    const Divider(height: 1),
+                                  ],
+                                )),
+                          ],
+                        ),
             ),
           ),
         ],
@@ -134,23 +169,23 @@ class UsersListScreen extends StatelessWidget {
   Widget _buildTableHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppTheme.border)),
-      ),
+      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppTheme.border))),
       child: const Row(
         children: [
           Expanded(flex: 3, child: Text('USUÁRIO', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w600))),
           Expanded(flex: 2, child: Text('PAPEL', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w600))),
-          Expanded(flex: 1, child: Text('STATUS', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w600))),
-          SizedBox(width: 48),
+          Expanded(flex: 2, child: Text('DESDE', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w600))),
         ],
       ),
     );
   }
 
-  Widget _buildTableRow(UserResource user) {
+  Widget _buildTableRow(WorkspaceProvider provider, AuthProvider auth, User usuario) {
+    final souEu = usuario.id == auth.currentUser?.id;
+    final souAdmin = auth.isAdmin;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       child: Row(
         children: [
           Expanded(
@@ -158,17 +193,25 @@ class UsersListScreen extends StatelessWidget {
             child: Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: AppTheme.primary.withOpacity(0.1),
+                  backgroundColor: AppTheme.primary.withValues(alpha: 0.15),
                   radius: 16,
-                  child: Text(user.name[0], style: const TextStyle(color: AppTheme.primary, fontSize: 12)),
+                  child: Text(usuario.iniciais, style: const TextStyle(color: AppTheme.primary, fontSize: 12)),
                 ),
                 const SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(user.name, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+                    Row(
+                      children: [
+                        Text(usuario.nome, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+                        if (souEu) ...[
+                          const SizedBox(width: 6),
+                          Text('(você)', style: TextStyle(fontSize: 11, color: AppTheme.textDisabled)),
+                        ],
+                      ],
+                    ),
                     const SizedBox(height: 2),
-                    Text(user.email, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                    Text(usuario.email, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
                   ],
                 ),
               ],
@@ -176,38 +219,31 @@ class UsersListScreen extends StatelessWidget {
           ),
           Expanded(
             flex: 2,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppTheme.background,
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: AppTheme.border),
-              ),
-              child: Text(user.role, style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
-            ),
+            child: souEu
+                ? Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(4), border: Border.all(color: AppTheme.border)),
+                    child: Text(usuario.papelGlobal, style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+                  )
+                : DropdownButton<String>(
+                    value: usuario.papelGlobal,
+                    underline: const SizedBox.shrink(),
+                    style: const TextStyle(fontSize: 13, color: AppTheme.textMain),
+                    dropdownColor: AppTheme.surfaceRaised,
+                    items: _papeis
+                        .where((p) => p != 'ADMIN' || souAdmin)
+                        .map((p) => DropdownMenuItem(value: p, child: Text(p)))
+                        .toList(),
+                    onChanged: (val) {
+                      if (val != null && val != usuario.papelGlobal) _alterarPapel(provider, usuario, val);
+                    },
+                  ),
           ),
           Expanded(
-            flex: 1,
-            child: Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: AppTheme.statusApproved,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Text('Ativo', style: TextStyle(fontSize: 13)),
-              ],
-            ),
-          ),
-          SizedBox(
-            width: 48,
-            child: IconButton(
-              icon: const Icon(Icons.more_vert, color: AppTheme.textSecondary),
-              onPressed: () {},
+            flex: 2,
+            child: Text(
+              usuario.criadoEm != null ? '${usuario.criadoEm!.day}/${usuario.criadoEm!.month}/${usuario.criadoEm!.year}' : '—',
+              style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
             ),
           ),
         ],

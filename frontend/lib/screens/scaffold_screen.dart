@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 import 'package:frontend/theme/app_theme.dart';
+import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/screens/dashboard_screen.dart';
 import 'package:frontend/screens/projects_list_screen.dart';
 import 'package:frontend/screens/my_missions_screen.dart';
@@ -11,6 +13,8 @@ import 'package:frontend/screens/users_list_screen.dart';
 import 'package:frontend/screens/audit_log_screen.dart';
 import 'package:frontend/screens/archive_screen.dart';
 
+enum _Secao { dashboard, projetos, minhasMissoes, revisao, areas, tiposProjeto, usuarios, auditoria, arquivamento }
+
 class ScaffoldScreen extends StatefulWidget {
   const ScaffoldScreen({super.key});
 
@@ -19,23 +23,42 @@ class ScaffoldScreen extends StatefulWidget {
 }
 
 class _ScaffoldScreenState extends State<ScaffoldScreen> {
-  int _selectedIndex = 0;
+  _Secao _secao = _Secao.dashboard;
 
-  // Placeholder para as telas reais depois
-  final List<Widget> _screens = [
-    const DashboardScreen(),
-    const ProjectsListScreen(),
-    const MyMissionsScreen(),
-    const ReviewQueueScreen(),
-    const AreasListScreen(),
-    const ProjectTypesScreen(),
-    const UsersListScreen(),
-    const AuditLogScreen(),
-    const ArchiveScreen(),
-  ];
+  Future<void> _logout() async {
+    await context.read<AuthProvider>().logout();
+    if (mounted) Navigator.pushReplacementNamed(context, '/login');
+  }
+
+  Widget _buildBody() {
+    switch (_secao) {
+      case _Secao.dashboard:
+        return DashboardScreen(onNavigateToAudit: () => setState(() => _secao = _Secao.auditoria));
+      case _Secao.projetos:
+        return const ProjectsListScreen();
+      case _Secao.minhasMissoes:
+        return const MyMissionsScreen();
+      case _Secao.revisao:
+        return const ReviewQueueScreen();
+      case _Secao.areas:
+        return const AreasListScreen();
+      case _Secao.tiposProjeto:
+        return const ProjectTypesScreen();
+      case _Secao.usuarios:
+        return const UsersListScreen();
+      case _Secao.auditoria:
+        return const AuditLogScreen();
+      case _Secao.arquivamento:
+        return const ArchiveScreen();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final ehGestor = auth.isAdmin || auth.isLider;
+    final podeRevisar = auth.isAdmin || auth.isLider || auth.isRevisor;
+
     return Scaffold(
       backgroundColor: AppTheme.background,
       body: Row(
@@ -47,112 +70,78 @@ class _ScaffoldScreenState extends State<ScaffoldScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header da Sidebar (Logo)
                 Padding(
                   padding: const EdgeInsets.all(24.0),
                   child: Row(
                     children: [
-                      SvgPicture.asset(
-                        'assets/logo.svg',
-                        width: 32,
-                        height: 32,
-                      ),
+                      SvgPicture.asset('assets/logo.svg', width: 32, height: 32),
                       const SizedBox(width: 12),
                       Text(
                         'CSIS',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: AppTheme.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppTheme.primary, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
                 ),
                 const Divider(),
-                // Itens de Menu (Admin view)
                 Expanded(
                   child: ListView(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     children: [
-                      _buildNavItem(0, 'Painel', Icons.dashboard_outlined),
-                      
-                      _buildExpansionGroup(
-                        'Projetos',
-                        Icons.folder_outlined,
-                        [
-                          _buildExpansionItem(1, 'Projetos Abertos'),
-                          _buildExpansionItem(2, 'Minhas Missões'),
-                          _buildExpansionItem(3, 'Fila de Revisão'),
-                        ],
-                      ),
-
-                      _buildExpansionGroup(
-                        'Áreas',
-                        Icons.domain_outlined,
-                        [
-                          _buildExpansionItem(4, 'Gestão de Áreas'),
-                          _buildExpansionItem(5, 'Tipos de Projeto'),
-                        ],
-                      ),
-
-                      _buildExpansionGroup(
-                        'Recursos',
-                        Icons.settings_suggest_outlined,
-                        [
-                          _buildExpansionItem(6, 'Gestão de Usuários'),
-                          _buildExpansionItem(7, 'Auditoria Global'),
-                        ],
-                      ),
-
-                      _buildExpansionGroup(
-                        'Arquivamento',
-                        Icons.archive_outlined,
-                        [
-                          _buildExpansionItem(8, 'Projetos Arquivados'),
-                        ],
-                      ),
+                      _buildNavItem(_Secao.dashboard, 'Painel', Icons.dashboard_outlined),
+                      _buildExpansionGroup('Projetos', Icons.folder_outlined, [
+                        _buildExpansionItem(_Secao.projetos, 'Projetos Abertos'),
+                        _buildExpansionItem(_Secao.minhasMissoes, 'Minhas Missões'),
+                        if (podeRevisar) _buildExpansionItem(_Secao.revisao, 'Fila de Revisão'),
+                      ]),
+                      if (ehGestor)
+                        _buildExpansionGroup('Áreas', Icons.domain_outlined, [
+                          _buildExpansionItem(_Secao.areas, 'Gestão de Áreas'),
+                          _buildExpansionItem(_Secao.tiposProjeto, 'Tipos de Projeto'),
+                        ]),
+                      if (ehGestor)
+                        _buildExpansionGroup('Recursos', Icons.settings_suggest_outlined, [
+                          _buildExpansionItem(_Secao.usuarios, 'Gestão de Usuários'),
+                          _buildExpansionItem(_Secao.auditoria, 'Auditoria Global'),
+                        ]),
+                      _buildExpansionGroup('Arquivamento', Icons.archive_outlined, [
+                        _buildExpansionItem(_Secao.arquivamento, 'Projetos Arquivados'),
+                      ]),
                     ],
                   ),
                 ),
                 const Divider(),
-                // User Menu
                 ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: AppTheme.primary.withOpacity(0.1),
-                    child: const Text('A', style: TextStyle(color: AppTheme.primary)),
+                    backgroundColor: AppTheme.primary.withValues(alpha: 0.15),
+                    child: Text(auth.currentUser?.iniciais ?? '?', style: const TextStyle(color: AppTheme.primary)),
                   ),
-                  title: const Text('Admin', style: TextStyle(fontSize: 14)),
-                  subtitle: const Text('Sair', style: TextStyle(fontSize: 12)),
-                  onTap: () {
-                    Navigator.pushReplacementNamed(context, '/login');
-                  },
+                  title: Text(auth.currentUser?.nome ?? '', style: const TextStyle(fontSize: 14), overflow: TextOverflow.ellipsis),
+                  subtitle: Text(auth.currentUser?.papelGlobal ?? '', style: const TextStyle(fontSize: 12)),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.logout, size: 18, color: AppTheme.textSecondary),
+                    tooltip: 'Sair',
+                    onPressed: _logout,
+                  ),
                 ),
                 const SizedBox(height: 8),
               ],
             ),
           ),
           const VerticalDivider(width: 1, thickness: 1, color: AppTheme.border),
-          
-          // Main Content Area
           Expanded(
             child: Column(
               children: [
-                // Topbar
                 Container(
                   height: 64,
                   color: AppTheme.surface,
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Row(
                     children: [
-                      // Search bar
                       Expanded(
                         child: Container(
                           height: 40,
-                          decoration: BoxDecoration(
-                            color: AppTheme.background,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppTheme.border),
-                          ),
+                          decoration: BoxDecoration(color: AppTheme.background, borderRadius: BorderRadius.circular(AppTheme.radius), border: Border.all(color: AppTheme.border)),
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: const Row(
                             children: [
@@ -164,36 +153,15 @@ class _ScaffoldScreenState extends State<ScaffoldScreen> {
                         ),
                       ),
                       const SizedBox(width: 24),
-                      // Notifications
-                      Stack(
-                        alignment: Alignment.topRight,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.notifications_outlined, color: AppTheme.textSecondary),
-                            onPressed: () {},
-                          ),
-                          Container(
-                            margin: const EdgeInsets.all(8),
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: AppTheme.statusRejected,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Text(
-                              '3',
-                              style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                            ),
-                          )
-                        ],
+                      IconButton(
+                        icon: const Icon(Icons.notifications_outlined, color: AppTheme.textSecondary),
+                        onPressed: () {},
                       ),
                     ],
                   ),
                 ),
                 const Divider(height: 1, thickness: 1, color: AppTheme.border),
-                // Tela selecionada
-                Expanded(
-                  child: _screens[_selectedIndex],
-                ),
+                Expanded(child: _buildBody()),
               ],
             ),
           ),
@@ -202,38 +170,21 @@ class _ScaffoldScreenState extends State<ScaffoldScreen> {
     );
   }
 
-  Widget _buildNavItem(int index, String title, IconData icon) {
-    final isSelected = _selectedIndex == index;
+  Widget _buildNavItem(_Secao secao, String title, IconData icon) {
+    final isSelected = _secao == secao;
     return InkWell(
-      onTap: () {
-        setState(() {
-          _selectedIndex = index;
-        });
-      },
+      onTap: () => setState(() => _secao = secao),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         decoration: BoxDecoration(
-          border: isSelected
-              ? const Border(left: BorderSide(color: AppTheme.primary, width: 3))
-              : const Border(left: BorderSide(color: Colors.transparent, width: 3)),
-          color: isSelected ? AppTheme.primary.withOpacity(0.05) : Colors.transparent,
+          border: isSelected ? const Border(left: BorderSide(color: AppTheme.primary, width: 3)) : const Border(left: BorderSide(color: Colors.transparent, width: 3)),
+          color: isSelected ? AppTheme.primary.withValues(alpha: 0.08) : Colors.transparent,
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              size: 20,
-              color: isSelected ? AppTheme.primary : AppTheme.textSecondary,
-            ),
+            Icon(icon, size: 20, color: isSelected ? AppTheme.primary : AppTheme.textSecondary),
             const SizedBox(width: 16),
-            Text(
-              title,
-              style: TextStyle(
-                color: isSelected ? AppTheme.primary : AppTheme.textSecondary,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                fontSize: 14,
-              ),
-            ),
+            Text(title, style: TextStyle(color: isSelected ? AppTheme.primary : AppTheme.textSecondary, fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400, fontSize: 14)),
           ],
         ),
       ),
@@ -241,48 +192,26 @@ class _ScaffoldScreenState extends State<ScaffoldScreen> {
   }
 
   Widget _buildExpansionGroup(String title, IconData icon, List<Widget> children) {
+    if (children.isEmpty) return const SizedBox.shrink();
     return ExpansionTile(
       leading: Icon(icon, size: 20, color: AppTheme.textSecondary),
-      title: Text(
-        title,
-        style: const TextStyle(
-          color: AppTheme.textSecondary,
-          fontWeight: FontWeight.w600,
-          fontSize: 14,
-        ),
-      ),
+      title: Text(title, style: const TextStyle(color: AppTheme.textSecondary, fontWeight: FontWeight.w600, fontSize: 14)),
       iconColor: AppTheme.textSecondary,
       collapsedIconColor: AppTheme.textSecondary,
       childrenPadding: EdgeInsets.zero,
+      initiallyExpanded: true,
       children: children,
     );
   }
 
-  Widget _buildExpansionItem(int index, String title) {
-    final isSelected = _selectedIndex == index;
+  Widget _buildExpansionItem(_Secao secao, String title) {
+    final isSelected = _secao == secao;
     return InkWell(
-      onTap: () {
-        setState(() {
-          _selectedIndex = index;
-        });
-      },
+      onTap: () => setState(() => _secao = secao),
       child: Container(
         padding: const EdgeInsets.only(left: 60, top: 10, bottom: 10, right: 24),
-        color: isSelected ? AppTheme.primary.withOpacity(0.05) : Colors.transparent,
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  color: isSelected ? AppTheme.primary : AppTheme.textSecondary,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  fontSize: 13,
-                ),
-              ),
-            ),
-          ],
-        ),
+        color: isSelected ? AppTheme.primary.withValues(alpha: 0.08) : Colors.transparent,
+        child: Text(title, style: TextStyle(color: isSelected ? AppTheme.primary : AppTheme.textSecondary, fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400, fontSize: 13)),
       ),
     );
   }
