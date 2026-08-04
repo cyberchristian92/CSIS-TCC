@@ -348,21 +348,29 @@ class _MissionDetailPanelState extends State<_MissionDetailPanel> {
                         Text(_missao.criterioAceite!, style: const TextStyle(fontSize: 14)),
                         const SizedBox(height: 12),
                       ],
-                      Row(
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
-                          const Icon(Icons.person_outline, size: 16, color: AppTheme.textSecondary),
-                          const SizedBox(width: 6),
-                          Text(_missao.responsavelNome ?? 'Sem responsável', style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
-                          if (podeGerenciar) ...[
-                            const SizedBox(width: 8),
-                            TextButton(onPressed: () => _atribuir(provider), child: const Text('Atribuir', style: TextStyle(fontSize: 12))),
-                          ],
-                          if (_missao.prazo != null) ...[
-                            const SizedBox(width: 24),
-                            const Icon(Icons.event_outlined, size: 16, color: AppTheme.textSecondary),
-                            const SizedBox(width: 6),
-                            Text('${_missao.prazo!.day}/${_missao.prazo!.month}/${_missao.prazo!.year}', style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
-                          ],
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.person_outline, size: 16, color: AppTheme.textSecondary),
+                              const SizedBox(width: 6),
+                              Text(_missao.responsavelNome ?? 'Sem responsável', style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+                            ],
+                          ),
+                          if (podeGerenciar) TextButton(onPressed: () => _atribuir(provider), child: const Text('Atribuir', style: TextStyle(fontSize: 12))),
+                          if (_missao.prazo != null)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.event_outlined, size: 16, color: AppTheme.textSecondary),
+                                const SizedBox(width: 6),
+                                Text('${_missao.prazo!.day}/${_missao.prazo!.month}/${_missao.prazo!.year}', style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+                              ],
+                            ),
                         ],
                       ),
                       const SizedBox(height: 20),
@@ -387,14 +395,18 @@ class _MissionDetailPanelState extends State<_MissionDetailPanel> {
                       else
                         ..._entregas.map((entrega) => _buildEntregaCard(entrega, podeRevisar, provider)),
                       const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 12,
+                        runSpacing: 8,
                         children: [
                           Text('Anexos desta missão', style: Theme.of(context).textTheme.titleSmall),
-                          Row(
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
                             children: [
                               OutlinedButton.icon(onPressed: () => _fazerUpload(provider), icon: const Icon(Icons.upload_file, size: 16), label: const Text('Upload')),
-                              const SizedBox(width: 8),
                               ElevatedButton.icon(
                                 onPressed: () async {
                                   await Navigator.push(context, MaterialPageRoute(builder: (context) => MarkdownEditorScreen(projectId: _missao.projetoId, missaoId: _missao.id)));

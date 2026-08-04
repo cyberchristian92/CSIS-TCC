@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/theme/app_theme.dart';
+import 'package:frontend/theme/responsive.dart';
 import 'package:frontend/models/hierarchy_models.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/workspace_provider.dart';
@@ -73,6 +74,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final auth = context.watch<AuthProvider>();
     final provider = context.watch<WorkspaceProvider>();
     final ehGestor = auth.isAdmin || auth.isLider;
+    final mobile = isMobile(context);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(32.0),
@@ -89,76 +91,79 @@ class _DashboardScreenState extends State<DashboardScreen> {
           if (_carregando)
             const Center(child: Padding(padding: EdgeInsets.all(48), child: CircularProgressIndicator(color: AppTheme.primary)))
           else ...[
-            Row(
+            Wrap(
+              spacing: 16,
+              runSpacing: 16,
               children: [
-                Expanded(child: _buildKpiCard('Projetos Ativos', '$_projetosAtivos', AppTheme.primary)),
-                const SizedBox(width: 16),
-                Expanded(child: _buildKpiCard('Projetos Atrasados', '$_projetosAtrasados', AppTheme.statusRejected)),
-                const SizedBox(width: 16),
-                Expanded(child: _buildKpiCard('Missões Pendentes', '$_missoesPendentes', AppTheme.statusInReview)),
-                const SizedBox(width: 16),
-                Expanded(child: _buildKpiCard('Minhas Missões', '$_minhasMissoes', AppTheme.statusInProgress)),
+                SizedBox(width: 220, child: _buildKpiCard('Projetos Ativos', '$_projetosAtivos', AppTheme.primary)),
+                SizedBox(width: 220, child: _buildKpiCard('Projetos Atrasados', '$_projetosAtrasados', AppTheme.statusRejected)),
+                SizedBox(width: 220, child: _buildKpiCard('Missões Pendentes', '$_missoesPendentes', AppTheme.statusInReview)),
+                SizedBox(width: 220, child: _buildKpiCard('Minhas Missões', '$_minhasMissoes', AppTheme.statusInProgress)),
               ],
             ),
             const SizedBox(height: 32),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: ehGestor ? 2 : 1,
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Últimos Projetos', style: Theme.of(context).textTheme.titleSmall),
-                          const SizedBox(height: 16),
-                          if (_recentes.isEmpty)
-                            const Text('Nenhum projeto encontrado.', style: TextStyle(color: AppTheme.textSecondary)),
-                          ..._recentes.map((p) => _buildProjectRow(p.nome, p.status)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                if (ehGestor) ...[
-                  const SizedBox(width: 24),
-                  Expanded(
-                    flex: 1,
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Auditoria (Recentes)', style: Theme.of(context).textTheme.titleSmall),
-                            const SizedBox(height: 16),
-                            if (provider.auditoria.isEmpty)
-                              const Text('Sem registros recentes', style: TextStyle(color: AppTheme.textSecondary)),
-                            ...provider.auditoria.take(4).map(
-                                  (log) => _buildAuditRow(
-                                    log.userNome ?? 'Sistema',
-                                    log.acao,
-                                    '${log.timestamp.hour.toString().padLeft(2, '0')}:${log.timestamp.minute.toString().padLeft(2, '0')}',
-                                  ),
-                                ),
-                            const SizedBox(height: 16),
-                            TextButton(
-                              onPressed: widget.onNavigateToAudit,
-                              child: const Text('Ver auditoria completa'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
+            _buildPaineisInferiores(context, provider, ehGestor, mobile),
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildPaineisInferiores(BuildContext context, WorkspaceProvider provider, bool ehGestor, bool mobile) {
+    final painelProjetos = Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Últimos Projetos', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 16),
+            if (_recentes.isEmpty) const Text('Nenhum projeto encontrado.', style: TextStyle(color: AppTheme.textSecondary)),
+            ..._recentes.map((p) => _buildProjectRow(p.nome, p.status)),
+          ],
+        ),
+      ),
+    );
+
+    final painelAuditoria = Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Auditoria (Recentes)', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 16),
+            if (provider.auditoria.isEmpty) const Text('Sem registros recentes', style: TextStyle(color: AppTheme.textSecondary)),
+            ...provider.auditoria.take(4).map(
+                  (log) => _buildAuditRow(
+                    log.userNome ?? 'Sistema',
+                    log.acao,
+                    '${log.timestamp.hour.toString().padLeft(2, '0')}:${log.timestamp.minute.toString().padLeft(2, '0')}',
+                  ),
+                ),
+            const SizedBox(height: 16),
+            TextButton(onPressed: widget.onNavigateToAudit, child: const Text('Ver auditoria completa')),
+          ],
+        ),
+      ),
+    );
+
+    if (mobile) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          painelProjetos,
+          if (ehGestor) ...[const SizedBox(height: 24), painelAuditoria],
+        ],
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(flex: ehGestor ? 2 : 1, child: painelProjetos),
+        if (ehGestor) ...[const SizedBox(width: 24), Expanded(flex: 1, child: painelAuditoria)],
+      ],
     );
   }
 

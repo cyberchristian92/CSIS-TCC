@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/theme/app_theme.dart';
+import 'package:frontend/theme/responsive.dart';
 import 'package:frontend/models/execution_models.dart';
 import 'package:frontend/providers/workspace_provider.dart';
 import 'package:frontend/screens/markdown_editor_screen.dart';
@@ -159,31 +160,39 @@ class _FileBrowserState extends State<FileBrowser> {
 
   @override
   Widget build(BuildContext context) {
+    final botoes = [
+      OutlinedButton.icon(onPressed: _novaPasta, icon: const Icon(Icons.create_new_folder_outlined, size: 16), label: const Text('Nova Pasta')),
+      OutlinedButton.icon(onPressed: _fazerUpload, icon: const Icon(Icons.upload_file, size: 16), label: const Text('Upload')),
+      ElevatedButton.icon(
+        onPressed: () async {
+          await Navigator.push(context, MaterialPageRoute(builder: (context) => MarkdownEditorScreen(projectId: widget.projetoId, pastaId: _pastaAtualId ?? 'raiz')));
+          await _carregar();
+        },
+        icon: const Icon(Icons.note_add, size: 16),
+        label: const Text('Novo Documento'),
+      ),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(child: _buildBreadcrumb()),
-            Row(
-              children: [
-                OutlinedButton.icon(onPressed: _novaPasta, icon: const Icon(Icons.create_new_folder_outlined, size: 16), label: const Text('Nova Pasta')),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(onPressed: _fazerUpload, icon: const Icon(Icons.upload_file, size: 16), label: const Text('Upload')),
-                const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    await Navigator.push(context, MaterialPageRoute(builder: (context) => MarkdownEditorScreen(projectId: widget.projetoId, pastaId: _pastaAtualId ?? 'raiz')));
-                    await _carregar();
-                  },
-                  icon: const Icon(Icons.note_add, size: 16),
-                  label: const Text('Novo Documento'),
-                ),
-              ],
-            ),
-          ],
-        ),
+        if (isMobile(context))
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildBreadcrumb(),
+              const SizedBox(height: 12),
+              Wrap(spacing: 8, runSpacing: 8, children: botoes),
+            ],
+          )
+        else
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(child: _buildBreadcrumb()),
+              Wrap(spacing: 8, children: botoes),
+            ],
+          ),
         const SizedBox(height: 16),
         Expanded(
           child: Container(
@@ -194,7 +203,10 @@ class _FileBrowserState extends State<FileBrowser> {
                 : (_pastas.isEmpty && _arquivos.isEmpty && _documentos.isEmpty)
                     ? const Center(child: Text('Pasta vazia. Crie uma subpasta, faça upload ou adicione um documento.', style: TextStyle(color: AppTheme.textSecondary)))
                     : GridView.builder(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 5, crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1),
+                        // Extensão máxima em vez de contagem fixa de colunas: reflui
+                        // sozinho pro número de colunas certo em qualquer largura
+                        // (considera o espaço real do grid, não a tela inteira).
+                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 180, crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1),
                         itemCount: _pastas.length + _arquivos.length + _documentos.length,
                         itemBuilder: (context, index) {
                           if (index < _pastas.length) return _buildPastaItem(_pastas[index]);

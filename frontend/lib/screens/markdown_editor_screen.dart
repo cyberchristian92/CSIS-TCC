@@ -3,6 +3,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:provider/provider.dart';
 import 'package:frontend/theme/app_theme.dart';
+import 'package:frontend/theme/responsive.dart';
 import 'package:frontend/models/execution_models.dart';
 import 'package:frontend/providers/workspace_provider.dart';
 
@@ -189,104 +190,112 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen> {
                 Container(
                   color: AppTheme.surface,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  child: Row(
-                    children: [
-                      _buildToolbarButton(Icons.format_bold, 'Negrito', () => _aplicarFormatacao('**', '**')),
-                      _buildToolbarButton(Icons.format_italic, 'Itálico', () => _aplicarFormatacao('_', '_')),
-                      _buildToolbarButton(Icons.title, 'Título', () => _aplicarFormatacao('# ')),
-                      _buildToolbarButton(Icons.text_fields, 'Subtítulo', () => _aplicarFormatacao('## ')),
-                      _buildToolbarButton(Icons.format_list_bulleted, 'Lista', () => _aplicarFormatacao('- ')),
-                      _buildToolbarButton(Icons.check_box_outlined, 'Checklist', () => _aplicarFormatacao('- [ ] ')),
-                      _buildToolbarButton(Icons.code, 'Bloco de código', () => _aplicarFormatacao('```\n', '\n```')),
-                      _buildToolbarButton(Icons.table_chart_outlined, 'Tabela', () => _aplicarFormatacao('\n| Coluna 1 | Coluna 2 |\n| --- | --- |\n| valor | valor |\n')),
-                      _buildToolbarButton(Icons.link, 'Vincular a outro documento ([[...]])', _inserirLinkParaDocumento),
-                    ],
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildToolbarButton(Icons.format_bold, 'Negrito', () => _aplicarFormatacao('**', '**')),
+                        _buildToolbarButton(Icons.format_italic, 'Itálico', () => _aplicarFormatacao('_', '_')),
+                        _buildToolbarButton(Icons.title, 'Título', () => _aplicarFormatacao('# ')),
+                        _buildToolbarButton(Icons.text_fields, 'Subtítulo', () => _aplicarFormatacao('## ')),
+                        _buildToolbarButton(Icons.format_list_bulleted, 'Lista', () => _aplicarFormatacao('- ')),
+                        _buildToolbarButton(Icons.check_box_outlined, 'Checklist', () => _aplicarFormatacao('- [ ] ')),
+                        _buildToolbarButton(Icons.code, 'Bloco de código', () => _aplicarFormatacao('```\n', '\n```')),
+                        _buildToolbarButton(Icons.table_chart_outlined, 'Tabela', () => _aplicarFormatacao('\n| Coluna 1 | Coluna 2 |\n| --- | --- |\n| valor | valor |\n')),
+                        _buildToolbarButton(Icons.link, 'Vincular a outro documento ([[...]])', _inserirLinkParaDocumento),
+                      ],
+                    ),
                   ),
                 ),
                 const Divider(height: 1, color: AppTheme.border),
                 Container(
                   color: AppTheme.surface,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.label_outline, size: 16, color: AppTheme.textSecondary),
-                      const SizedBox(width: 8),
-                      ..._tags.map((t) => Padding(
-                            padding: const EdgeInsets.only(right: 6),
-                            child: Chip(
-                              label: Text(t, style: const TextStyle(fontSize: 11)),
-                              onDeleted: () => setState(() => _tags.remove(t)),
-                              backgroundColor: AppTheme.surfaceRaised,
-                              visualDensity: VisualDensity.compact,
-                            ),
-                          )),
-                      SizedBox(
-                        width: 140,
-                        child: TextField(
-                          controller: _tagController,
-                          decoration: const InputDecoration(hintText: 'Nova tag...', border: InputBorder.none, isDense: true),
-                          style: const TextStyle(fontSize: 12),
-                          onSubmitted: _adicionarTag,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.label_outline, size: 16, color: AppTheme.textSecondary),
+                        const SizedBox(width: 8),
+                        ..._tags.map((t) => Padding(
+                              padding: const EdgeInsets.only(right: 6),
+                              child: Chip(
+                                label: Text(t, style: const TextStyle(fontSize: 11)),
+                                onDeleted: () => setState(() => _tags.remove(t)),
+                                backgroundColor: AppTheme.surfaceRaised,
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            )),
+                        SizedBox(
+                          width: 140,
+                          child: TextField(
+                            controller: _tagController,
+                            decoration: const InputDecoration(hintText: 'Nova tag...', border: InputBorder.none, isDense: true),
+                            style: const TextStyle(fontSize: 12),
+                            onSubmitted: _adicionarTag,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 const Divider(height: 1, color: AppTheme.border),
-                Expanded(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          color: AppTheme.surface,
-                          padding: const EdgeInsets.all(24.0),
-                          child: TextField(
-                            controller: _contentController,
-                            maxLines: null,
-                            expands: true,
-                            textAlignVertical: TextAlignVertical.top,
-                            decoration: const InputDecoration(
-                              hintText: '# Título do documento\n\nEscreva em Markdown aqui... Use [[Título]] para linkar outro documento.',
-                              border: OutlineInputBorder(),
-                            ),
-                            style: AppTheme.monoTextStyle,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Container(
-                          color: AppTheme.background,
-                          padding: const EdgeInsets.all(24.0),
-                          child: ValueListenableBuilder<TextEditingValue>(
-                            valueListenable: _contentController,
-                            builder: (context, value, child) {
-                              if (value.text.isEmpty) {
-                                return const Center(child: Text('Preview do Markdown', style: TextStyle(color: AppTheme.textDisabled)));
-                              }
-                              return Markdown(
-                                data: value.text,
-                                selectable: true,
-                                extensionSet: md.ExtensionSet.gitHubFlavored,
-                                inlineSyntaxes: [_WikiLinkSyntax()],
-                                builders: {'wikilink': _WikiLinkBuilder(onTap: _abrirWikiLink)},
-                                styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-                                  p: const TextStyle(fontSize: 14, color: AppTheme.textMain),
-                                  h1: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.primary),
-                                  h2: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textMain),
-                                  code: AppTheme.monoTextStyle.copyWith(backgroundColor: AppTheme.surfaceRaised, fontSize: 13),
-                                  tableBorder: TableBorder.all(color: AppTheme.border),
-                                  tableHead: const TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                Expanded(child: _buildEditorEPreview(context)),
               ],
             ),
     );
+  }
+
+  Widget _buildEditorEPreview(BuildContext context) {
+    final editor = Container(
+      color: AppTheme.surface,
+      padding: const EdgeInsets.all(24.0),
+      child: TextField(
+        controller: _contentController,
+        maxLines: null,
+        expands: true,
+        textAlignVertical: TextAlignVertical.top,
+        decoration: const InputDecoration(
+          hintText: '# Título do documento\n\nEscreva em Markdown aqui... Use [[Título]] para linkar outro documento.',
+          border: OutlineInputBorder(),
+        ),
+        style: AppTheme.monoTextStyle,
+      ),
+    );
+
+    final preview = Container(
+      color: AppTheme.background,
+      padding: const EdgeInsets.all(24.0),
+      child: ValueListenableBuilder<TextEditingValue>(
+        valueListenable: _contentController,
+        builder: (context, value, child) {
+          if (value.text.isEmpty) {
+            return const Center(child: Text('Preview do Markdown', style: TextStyle(color: AppTheme.textDisabled)));
+          }
+          return Markdown(
+            data: value.text,
+            selectable: true,
+            extensionSet: md.ExtensionSet.gitHubFlavored,
+            inlineSyntaxes: [_WikiLinkSyntax()],
+            builders: {'wikilink': _WikiLinkBuilder(onTap: _abrirWikiLink)},
+            styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+              p: const TextStyle(fontSize: 14, color: AppTheme.textMain),
+              h1: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.primary),
+              h2: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textMain),
+              code: AppTheme.monoTextStyle.copyWith(backgroundColor: AppTheme.surfaceRaised, fontSize: 13),
+              tableBorder: TableBorder.all(color: AppTheme.border),
+              tableHead: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          );
+        },
+      ),
+    );
+
+    // Editor e preview lado a lado no desktop; empilhados (editor em cima) no
+    // celular, onde não cabem os dois de forma legível na mesma largura.
+    if (isMobile(context)) {
+      return Column(children: [Expanded(child: editor), const Divider(height: 1, color: AppTheme.border), Expanded(child: preview)]);
+    }
+    return Row(children: [Expanded(child: editor), Expanded(child: preview)]);
   }
 }

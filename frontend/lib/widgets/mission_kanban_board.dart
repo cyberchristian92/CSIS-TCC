@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/theme/app_theme.dart';
+import 'package:frontend/theme/responsive.dart';
 import 'package:frontend/models/hierarchy_models.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/workspace_provider.dart';
@@ -62,6 +63,25 @@ class MissionKanbanBoard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (isMobile(context)) {
+      // Em telas estreitas, 5 colunas flexíveis ficam ilegíveis — em vez
+      // disso cada coluna ganha largura fixa e o quadro rola horizontalmente.
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: MissaoStatus.values
+              .map((status) => [
+                    SizedBox(width: 260, child: _buildColuna(context, status)),
+                    const SizedBox(width: 12),
+                  ])
+              .expand((w) => w)
+              .toList()
+            ..removeLast(),
+        ),
+      );
+    }
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: MissaoStatus.values
