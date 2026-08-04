@@ -19,7 +19,11 @@ class ApiException implements Exception {
 /// necessário porque o front (porta 5000, ver FRONTEND_ORIGIN) e o backend
 /// (porta 3000) são origens diferentes, ainda que "same-site" (localhost).
 class ApiClient {
-  static const String baseUrl = 'http://localhost:3000';
+  // Deriva do host que serviu a página (localhost no desktop, IP da rede
+  // local quando acessado por outro dispositivo) em vez de fixar localhost —
+  // assim o mesmo build funciona tanto no navegador da máquina quanto no
+  // celular, sem precisar recompilar pra cada endereço.
+  static String get baseUrl => 'http://${Uri.base.host}:3000';
 
   final http.Client _client = browser.BrowserClient()..withCredentials = true;
 
