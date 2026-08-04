@@ -31,6 +31,7 @@ model User {
   comentarios  ComentarioMissao[]
   permissoes   Permissao[]
   logs         LogAuditoria[]
+  tokensRecuperacao TokenRecuperacaoSenha[]
 }
 
 model Workspace {
@@ -278,4 +279,19 @@ model ChecklistItem {
   criado_em  DateTime @default(now())
 
   missao     Missao   @relation(fields: [missao_id], references: [id], onDelete: Cascade)
+}
+
+// ----------------------------------------------------------------------------
+// Recuperação de senha
+// ----------------------------------------------------------------------------
+
+model TokenRecuperacaoSenha {
+  id         String    @id @default(uuid())
+  user_id    String
+  token_hash String    @unique
+  expira_em  DateTime
+  usado_em   DateTime?
+  criado_em  DateTime  @default(now())
+
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }

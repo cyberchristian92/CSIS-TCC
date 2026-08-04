@@ -48,6 +48,18 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Lança [ApiException] em erro real (ex: rede) — a tela trata a exceção
+  /// localmente. O backend sempre responde 200 aqui, exista ou não o email,
+  /// pra não permitir descobrir contas cadastradas por esta rota.
+  Future<void> esqueciSenha(String email) {
+    return _api.post('/auth/esqueci-senha', {'email': email});
+  }
+
+  /// Lança [ApiException] se o token for inválido/expirado/já usado.
+  Future<void> redefinirSenha(String token, String novaSenha) {
+    return _api.post('/auth/redefinir-senha', {'token': token, 'novaSenha': novaSenha});
+  }
+
   Future<void> logout() async {
     try {
       await _api.post('/auth/logout');

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/screens/login_screen.dart';
 import 'package:frontend/screens/scaffold_screen.dart';
+import 'package:frontend/screens/reset_password_screen.dart';
 import 'package:frontend/theme/app_theme.dart';
 import 'package:frontend/providers/app_state.dart';
 import 'package:frontend/providers/auth_provider.dart';
@@ -25,11 +26,17 @@ class CsisApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Link de redefinição de senha vindo por email: http://.../?token=...
+    // Checado aqui, antes do AuthGate, pra não depender de sessão logada.
+    final tokenRecuperacao = Uri.base.queryParameters['token'];
+
     return MaterialApp(
       title: 'Plataforma CSIS',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: const AuthGate(),
+      home: tokenRecuperacao != null && tokenRecuperacao.isNotEmpty
+          ? ResetPasswordScreen(token: tokenRecuperacao)
+          : const AuthGate(),
       routes: {
         '/login': (context) => const LoginScreen(),
         '/dashboard': (context) => const ScaffoldScreen(),

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/theme/app_theme.dart';
+import 'package:frontend/theme/responsive.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/screens/forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -40,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final isDesktop = size.width > 800;
+    final isDesktop = !isMobile(context);
     final erro = context.watch<AuthProvider>().errorMessage;
 
     return Scaffold(
@@ -116,6 +118,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       if (value == null || value.isEmpty) return 'Informe a senha.';
                       return null;
                     },
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPasswordScreen())),
+                      child: const Text('Esqueci minha senha', style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
+                    ),
                   ),
                   if (erro != null) ...[
                     const SizedBox(height: 12),

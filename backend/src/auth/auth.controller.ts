@@ -1,9 +1,12 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { AtualizarPapelDto } from './dto/atualizar-papel.dto';
+import { EsqueciSenhaDto } from './dto/esqueci-senha.dto';
+import { RedefinirSenhaDto } from './dto/redefinir-senha.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -64,5 +67,21 @@ export class AuthController {
   @Roles('ADMIN', 'LIDER')
   atualizarPapel(@Param('id') id: string, @Body() dto: AtualizarPapelDto, @CurrentUser() user: AuthenticatedUser) {
     return this.authService.atualizarPapel(id, dto.papelGlobal, user.id, user.papel_global);
+  }
+
+  @Post('esqueci-senha')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 15 * 60 * 1000 } })
+  esqueciSenha(@Body() dto: EsqueciSenhaDto) {
+    return this.authService.solicitarRecuperacaoSenha(dto.email);
+  }
+
+  @Post('redefinir-senha')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 15 * 60 * 1000 } })
+  redefinirSenha(@Body() dto: RedefinirSenhaDto) {
+    return this.authService.redefinirSenha(dto.token, dto.novaSenha);
   }
 }
