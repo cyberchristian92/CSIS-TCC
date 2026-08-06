@@ -4,6 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:frontend/theme/app_theme.dart';
 import 'package:frontend/theme/responsive.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/providers/workspace_provider.dart';
+import 'package:frontend/services/fake_api_client.dart';
+import 'package:frontend/services/fake_backend.dart';
 import 'package:frontend/screens/forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -18,6 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _enviando = false;
+  bool _entrandoDemo = false;
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
@@ -28,6 +32,25 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _enviando = false);
 
     if (sucesso && mounted) {
+      Navigator.pushReplacementNamed(context, '/dashboard');
+    }
+  }
+
+  /// Não há backend público hospedado ainda — este botão troca o cliente
+  /// HTTP dos providers pelo [FakeApiClient] (dados fictícios, só em
+  /// memória) e loga com a conta ADMIN de demonstração, pra dar pra navegar
+  /// o app inteiro sem depender de nenhuma API real.
+  Future<void> _entrarDemo() async {
+    setState(() => _entrandoDemo = true);
+    final auth = context.read<AuthProvider>();
+    final workspace = context.read<WorkspaceProvider>();
+    final cliente = FakeApiClient();
+    auth.habilitarModoDemo(cliente);
+    workspace.habilitarModoDemo(cliente);
+    final sucesso = await auth.login(FakeBackend.emailDemo, FakeBackend.senhaDemo);
+    if (!mounted) return;
+    setState(() => _entrandoDemo = false);
+    if (sucesso) {
       Navigator.pushReplacementNamed(context, '/dashboard');
     }
   }
@@ -146,6 +169,24 @@ class _LoginScreenState extends State<LoginScreen> {
                             )
                           : const Text('Entrar'),
                     ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(children: const [Expanded(child: Divider(color: AppTheme.border)), Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('ou', style: TextStyle(color: AppTheme.textDisabled, fontSize: 12))), Expanded(child: Divider(color: AppTheme.border))]),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _entrandoDemo ? null : _entrarDemo,
+                      icon: _entrandoDemo
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primary))
+                          : const Icon(Icons.visibility_outlined, size: 18),
+                      label: const Text('Entrar em modo demonstração'),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Navega pelo app inteiro com dados de exemplo, sem precisar de um backend real. Nada do que você fizer aqui é salvo.',
+                    style: TextStyle(color: AppTheme.textDisabled, fontSize: 12),
                   ),
                 ],
               ),

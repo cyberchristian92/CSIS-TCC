@@ -3,11 +3,20 @@ import 'package:frontend/models/auth_models.dart';
 import 'package:frontend/services/api_client.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final ApiClient _api = ApiClient();
+  ApiClientBase _api = ApiClient();
 
   User? currentUser;
   bool isLoading = true; // true durante a checagem inicial de sessão
   String? errorMessage;
+  bool modoDemo = false;
+
+  /// Troca o cliente HTTP real pelo backend fake em memória — usado pelo
+  /// botão "Entrar em modo demonstração" do login, quando não há backend
+  /// público disponível ainda.
+  void habilitarModoDemo(ApiClientBase clienteDemo) {
+    _api = clienteDemo;
+    modoDemo = true;
+  }
 
   bool get isAdmin => currentUser?.isAdmin ?? false;
   bool get isLider => currentUser?.isLider ?? false;

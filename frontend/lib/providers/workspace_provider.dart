@@ -8,7 +8,16 @@ import 'package:frontend/services/api_client.dart';
 /// central do app (Projetos, Missões, Entregas, Revisões, Arquivos,
 /// Documentos, Auditoria, Usuários).
 class WorkspaceProvider extends ChangeNotifier {
-  final ApiClient _api = ApiClient();
+  ApiClientBase _api = ApiClient();
+
+  /// Troca o cliente HTTP real pelo backend fake em memória — ver
+  /// [AuthProvider.habilitarModoDemo]. Também limpa os caches de
+  /// workspace/área padrão, que pertenciam à sessão real anterior.
+  void habilitarModoDemo(ApiClientBase clienteDemo) {
+    _api = clienteDemo;
+    _areaIdPadrao = null;
+    _workspaceIdPadrao = null;
+  }
 
   bool isLoadingProjetos = false;
   String? erro;

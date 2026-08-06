@@ -150,6 +150,24 @@ class _ScaffoldScreenState extends State<ScaffoldScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Row(
                     children: [
+                      if (auth.modoDemo) ...[
+                        Tooltip(
+                          message: 'Você está no modo demonstração: os dados são fictícios e vivem só nesta aba — nada é salvo em um backend real.',
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(color: AppTheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(20), border: Border.all(color: AppTheme.primary.withValues(alpha: 0.4))),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.visibility_outlined, size: 14, color: AppTheme.primary),
+                                SizedBox(width: 6),
+                                Text('Modo demonstração', style: TextStyle(color: AppTheme.primary, fontSize: 12, fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                      ],
                       if (mobile) ...[
                         IconButton(
                           icon: const Icon(Icons.menu, color: AppTheme.textSecondary),
