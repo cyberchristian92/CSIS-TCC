@@ -16,7 +16,7 @@ export class DocumentosService {
       data: {
         projeto_id: projetoId,
         missao_id: dto.missaoId,
-        pasta_id: dto.pastaId,
+        pasta_id: dto.pastaId === 'raiz' ? null : dto.pastaId,
         autor_id: autorId,
         conteudo: dto.conteudo,
         tags: dto.tags ?? [],
@@ -49,7 +49,7 @@ export class DocumentosService {
     const anterior = await this.buscar(id);
     const atualizado = await this.prisma.documento.update({
       where: { id },
-      data: { conteudo: dto.conteudo, tags: dto.tags, pasta_id: dto.pastaId },
+      data: { conteudo: dto.conteudo, tags: dto.tags, pasta_id: dto.pastaId === 'raiz' ? null : dto.pastaId },
     });
     await this.auditoriaService.registrar(userId, 'ATUALIZAR', 'Documento', id, anterior, atualizado);
     return atualizado;

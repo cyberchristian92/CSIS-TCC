@@ -17,6 +17,7 @@ import { ComentariosModule } from './comentarios/comentarios.module';
 import { ChecklistModule } from './checklist/checklist.module';
 import { ExportacaoModule } from './exportacao/exportacao.module';
 import { AuditoriaModule } from './auditoria/auditoria.module';
+import { LaudoModule } from './laudo/laudo.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { AuditoriaModule } from './auditoria/auditoria.module';
     ChecklistModule,
     ExportacaoModule,
     AuditoriaModule,
+    LaudoModule,
   ],
   controllers: [AppController],
   providers: [AppService],

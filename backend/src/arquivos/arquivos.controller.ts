@@ -1,8 +1,10 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UploadedFile,
@@ -16,6 +18,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../common/types/authenticated-user';
 import { ArquivosService } from './arquivos.service';
+import { RenameArquivoDto } from './dto/rename-arquivo.dto';
 
 @Controller()
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -51,5 +54,10 @@ export class ArquivosController {
   @Get('arquivos/:id/verificar')
   verificarIntegridade(@Param('id') id: string) {
     return this.arquivosService.verificarIntegridade(id);
+  }
+
+  @Patch('arquivos/:id')
+  renomear(@Param('id') id: string, @Body() dto: RenameArquivoDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.arquivosService.renomear(id, dto.nome, user.id);
   }
 }

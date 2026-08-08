@@ -81,4 +81,16 @@ export class ArquivosService {
     const hashAtual = sha256Buffer(conteudo);
     return { integro: hashAtual === arquivo.hash_sha256, hash_original: arquivo.hash_sha256, hash_atual: hashAtual };
   }
+
+  // Só troca o nome de exibição (`nome`) — o arquivo em disco continua no
+  // mesmo `caminho` (que já carrega um prefixo de id, nunca colide) e o hash
+  // de integridade não é afetado. É esse `nome` que o compilador de laudo usa
+  // pra resolver uma referência tipo `logo.png` no markdown (arquivos na raiz
+  // do projeto, ver LaudoCompilerService.materializarArquivosDoProjeto).
+  async renomear(id: string, novoNome: string, userId: string) {
+    const anterior = await this.buscar(id);
+    const atualizado = await this.prisma.arquivo.update({ where: { id }, data: { nome: novoNome } });
+    await this.auditoriaService.registrar(userId, 'RENOMEAR', 'Arquivo', id, { nome: anterior.nome }, { nome: novoNome });
+    return atualizado;
+  }
 }

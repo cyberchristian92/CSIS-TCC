@@ -7,3 +7,6 @@ node_modules
 
 # Arquivos enviados pelos usuários (perícia) — não versionar
 /uploads
+
+# Diretório de trabalho da compilação de laudos (markdown + PDF gerado) — não versionar
+/laudo-workdir

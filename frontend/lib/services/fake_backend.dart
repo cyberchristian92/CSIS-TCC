@@ -218,6 +218,7 @@ class FakeBackend {
       if (matches(['checklist', ':id'])) return _alternarChecklist(id!, b['concluido'] as bool);
       if (matches(['documentos', ':id'])) return _atualizarDocumento(id!, b['conteudo'] as String, b['tags'] as List<dynamic>?, b['pastaId'] as String?);
       if (matches(['pastas', ':id'])) return _renomearPasta(id!, b['nome'] as String);
+      if (matches(['arquivos', ':id'])) return _renomearArquivo(id!, b['nome'] as String);
       if (matches(['auth', 'usuarios', ':id', 'papel'])) return _atualizarPapelUsuario(id!, b['papelGlobal'] as String);
     }
 
@@ -477,6 +478,13 @@ class FakeBackend {
     _arquivoBytes[id] = bytes;
     _log(enviadoPor ?? _sessaoUserId, 'ENVIOU_ARQUIVO', 'ARQUIVO', id, quando: quando);
     return {...row};
+  }
+
+  Map<String, dynamic> _renomearArquivo(String id, String nome) {
+    final arquivo = _exigir(_arquivos, id, 'Arquivo');
+    arquivo['nome'] = nome;
+    _log(_sessaoUserId, 'RENOMEAR', 'ARQUIVO', id);
+    return {...arquivo};
   }
 
   Map<String, dynamic> _criarDocumento(

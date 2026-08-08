@@ -36,6 +36,23 @@ services:
       SEED_ADMIN_SENHA: ${SEED_ADMIN_SENHA:-TrocarSenha123}
     restart: unless-stopped
 
+  # Motor de compilação do Laudo Pericial (Markdown + front-matter Eisvogel -> PDF).
+  # Container de vida longa (`sleep infinity`) controlado via `docker exec` pelo
+  # backend (mesmo padrão usado no protótipo redator-latex-standalone) — evita o
+  # custo de subir um container novo a cada compilação. Build próprio (em vez de
+  # `pandoc/extra` direto) porque o TeX Live daquela imagem não tem tudo que um
+  # laudo real usa (ex: pdfpages) — aqui é TeX Live "scheme-full" (todos os
+  # pacotes) + Pandoc + template eisvogel.latex.
+  pandoc:
+    build:
+      context: ./backend/pandoc
+      dockerfile: Dockerfile
+    container_name: csis_pandoc_engine
+    entrypoint: ["sleep", "infinity"]
+    volumes:
+      - ./backend/laudo-workdir:/work
+    restart: unless-stopped
+
   # nginx:
   #   image: nginx:alpine
   #   ports:

@@ -274,6 +274,11 @@ class WorkspaceProvider extends ChangeNotifier {
     return await _api.get('/arquivos/$arquivoId/verificar') as Map<String, dynamic>;
   }
 
+  Future<Arquivo> renomearArquivo(String arquivoId, String nome) async {
+    final json = await _api.patch('/arquivos/$arquivoId', {'nome': nome}) as Map<String, dynamic>;
+    return Arquivo.fromJson(json);
+  }
+
   Future<Documento> criarDocumento(String projetoId, String conteudo, {String? missaoId, String? pastaId, List<String>? tags}) async {
     final json = await _api.post('/projetos/$projetoId/documentos', {
       'conteudo': conteudo,
@@ -296,6 +301,20 @@ class WorkspaceProvider extends ChangeNotifier {
   Future<Documento> buscarDocumento(String documentoId) async {
     final json = await _api.get('/documentos/$documentoId') as Map<String, dynamic>;
     return Documento.fromJson(json);
+  }
+
+  /// Compila o conteúdo atual (já salvo) do documento em PDF via Pandoc +
+  /// Eisvogel. Lança [ApiException] se o motor de compilação não respondeu;
+  /// falha de sintaxe no próprio markdown volta como `sucesso: false` + `log`.
+  Future<ResultadoCompilacaoLaudo> compilarLaudo(String documentoId) async {
+    final json = await _api.post('/documentos/$documentoId/laudo/compilar') as Map<String, dynamic>;
+    return ResultadoCompilacaoLaudo(sucesso: json['sucesso'] as bool, log: json['log'] as String);
+  }
+
+  /// Bytes do PDF já compilado. Lança [ApiException] (404) se o documento
+  /// ainda não foi compilado com sucesso nenhuma vez.
+  Future<List<int>> baixarPdfLaudo(String documentoId) async {
+    return _api.getBytes('/documentos/$documentoId/laudo/pdf');
   }
 
   Future<List<Documento>> listarDocumentosDoProjeto(String projetoId, {String? missaoId, String? pastaId}) async {
@@ -387,4 +406,11 @@ class WorkspaceProvider extends ChangeNotifier {
     }
     return pendentes;
   }
+}
+
+class ResultadoCompilacaoLaudo {
+  final bool sucesso;
+  final String log;
+
+  ResultadoCompilacaoLaudo({required this.sucesso, required this.log});
 }
